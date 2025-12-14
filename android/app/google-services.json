@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "912733716262",
+    "project_id": "do-an-cnpm-1",
+    "storage_bucket": "do-an-cnpm-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912733716262:android:685ec2709325a4af0ccbe7",
+        "android_client_info": {
+          "package_name": "com.example.finance_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChl9FP-f0iB9S0--yvdUjuvb-41tavl4E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912733716262:android:2b497740d011b5e40ccbe7",
+        "android_client_info": {
+          "package_name": "com.example.quan_ly_chi_tieu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChl9FP-f0iB9S0--yvdUjuvb-41tavl4E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

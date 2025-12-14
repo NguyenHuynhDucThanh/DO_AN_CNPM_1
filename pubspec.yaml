@@ -1,0 +1,35 @@
+name: finance_app
+description: A finance management application built with Clean Architecture
+version: 1.0.0+1
+
+environment:
+  sdk: '^3.9.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fl_chart: ^0.66.0
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  
+  # Firebase (Cần thiết cho Auth & Cloud Firestore)
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  
+  # Functional Programming & Value Equality (Clean Arch chuẩn)
+  dartz: ^0.10.1
+  equatable: ^2.0.5
+  
+  # Utilities
+  intl: ^0.19.0       # Format tiền tệ, ngày tháng
+  uuid: ^4.3.3        # Tạo ID ngẫu nhiên
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
