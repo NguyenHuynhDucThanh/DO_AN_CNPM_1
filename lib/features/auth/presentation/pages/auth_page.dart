@@ -41,24 +41,18 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     // Lắng nghe sự kiện để điều hướng
     ref.listen(authNotifierProvider, (previous, next) {
       if (next is AuthAuthenticated) {
-        // 1. Đăng nhập thành công
+        // Đăng nhập thành công
         print('[AuthPage] Authenticated as: ${next.user.email}');
-
-        // 2. Log thông tin onboarding
         print('[AuthPage] isAdmin: ${next.user.isAdmin}');
-        print('[AuthPage] hasCompletedWalletOnboarding: ${next.user.hasCompletedWalletOnboarding}');
 
-        // 3. Chuyển hướng dựa trên role và wallet onboarding status
+        // Chuyển hướng dựa trên role
         Widget targetPage;
         
         if (next.user.isAdmin) {
-          // Admin luôn vào AdminHomePage (không cần wallet)
+          // Admin → AdminHomePage
           targetPage = const AdminHomePage();
-        } else if (!next.user.hasCompletedWalletOnboarding) {
-          // User lần đầu đăng nhập → Tạo ví (có Skip button)
-          targetPage = const CreateWalletPage(isOnboarding: true);
         } else {
-          // User đã onboard → HomePage
+          // User → HomePage (không cần ví)
           targetPage = const HomePage();
         }
         
