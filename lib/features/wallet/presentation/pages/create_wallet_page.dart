@@ -170,11 +170,6 @@ class _CreateWalletPageState extends ConsumerState<CreateWalletPage> {
     final balanceText = _initialBalanceController.text.replaceAll('.', '');
     final initialBalance = double.tryParse(balanceText) ?? 0;
 
-    // Mark onboarding completed BEFORE creating wallet (if onboarding flow)
-    if (widget.isOnboarding) {
-      final authService = ref.read(authServiceProvider);
-      await authService.markWalletOnboardingCompleted(userId);
-    }
 
     // Create wallet
     await ref.read(walletNotifierProvider.notifier).createWallet(

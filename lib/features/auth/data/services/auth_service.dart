@@ -27,8 +27,7 @@ class AuthService {
         email: user.email ?? '',
         displayName: user.displayName,
         role: 'user',
-        isLocked: false,
-        hasCompletedWalletOnboarding: false,
+        isLocked: false
       );
       await _firestore.collection('users').doc(user.uid).set(newUserModel.toDocument());
       return newUserModel;
@@ -61,8 +60,7 @@ class AuthService {
       displayName: displayName,
       phoneNumber: phoneNumber,
       role: 'user',
-      isLocked: false,
-      hasCompletedWalletOnboarding: false, // New users chưa onboard
+      isLocked: false
     );
     
     await _firestore.collection('users').doc(user.uid).set({
@@ -91,11 +89,5 @@ class AuthService {
     
     return UserModel.fromFirestore(userDoc);
   }
-
-  // Đánh dấu user đã hoàn thành wallet onboarding
-  Future<void> markWalletOnboardingCompleted(String userId) async {
-    await _firestore.collection('users').doc(userId).update({
-      'hasCompletedWalletOnboarding': true,
-    });
-  }
 }
+

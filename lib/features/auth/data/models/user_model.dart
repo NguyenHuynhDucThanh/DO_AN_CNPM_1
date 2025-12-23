@@ -9,8 +9,7 @@ class UserModel extends UserEntity {
     super.displayName,
     super.phoneNumber,
     super.role,
-    super.isLocked,
-    super.hasCompletedWalletOnboarding,
+    super.isLocked
   });
 
   // Chuyển từ Firebase User sang UserModel (chỉ có thông tin cơ bản)
@@ -20,8 +19,7 @@ class UserModel extends UserEntity {
       email: user.email ?? '',
       displayName: user.displayName,
       role: 'user', // Mặc định, cần fetch từ Firestore để có role thực
-      isLocked: false,
-      hasCompletedWalletOnboarding: false,
+      isLocked: false
     );
   }
 
@@ -34,8 +32,7 @@ class UserModel extends UserEntity {
       displayName: data['displayName'],
       phoneNumber: data['phoneNumber'],
       role: data['role'] ?? 'user',
-      isLocked: data['isLocked'] ?? false,
-      hasCompletedWalletOnboarding: data['hasCompletedWalletOnboarding'] ?? false,
+      isLocked: data['isLocked'] ?? false
     );
   }
 
@@ -48,7 +45,6 @@ class UserModel extends UserEntity {
       'phoneNumber': phoneNumber,
       'role': role,
       'isLocked': isLocked,
-      'hasCompletedWalletOnboarding': hasCompletedWalletOnboarding,
     };
   }
 }
