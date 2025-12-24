@@ -63,6 +63,7 @@ class AuthService {
       isLocked: false
     );
     
+    //Lưu hồ sơ trong Firestore
     await _firestore.collection('users').doc(user.uid).set({
       ...userModel.toDocument(),
       'createdAt': FieldValue.serverTimestamp(),

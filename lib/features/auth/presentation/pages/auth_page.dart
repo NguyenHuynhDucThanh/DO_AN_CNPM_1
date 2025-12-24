@@ -52,7 +52,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
           // Admin → AdminHomePage
           targetPage = const AdminHomePage();
         } else {
-          // User → HomePage (không cần ví)
+          // User → HomePage 
           targetPage = const HomePage();
         }
         
