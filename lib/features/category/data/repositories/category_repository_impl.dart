@@ -31,10 +31,11 @@ class CategoryRepositoryImpl implements CategoryRepository {
     }
   }
 
+  // --- CHỖ ĐÃ SỬA: Thêm 'String userId' vào tham số và truyền xuống service ---
   @override
-  Future<Either<Failure, Unit>> deleteCategory(String categoryId) async {
+  Future<Either<Failure, Unit>> deleteCategory(String categoryId, String userId) async {
     try {
-      await service.deleteCategory(categoryId);
+      await service.deleteCategory(categoryId, userId);
       return const Right(unit);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

@@ -16,20 +16,18 @@ class CategoryService {
   }
 
   Future<void> addCategory(CategoryModel category) async {
-    await _getUserCategories(category.userId).add(category.toDocument());
+    final col = _getUserCategories(category.userId);
+    final existing = await getCategories(category.userId);
+    final duplicate = existing.any(
+      (e) => e.name == category.name && e.type == category.type,
+    );
+    if (duplicate) return;
+
+    await col.doc(category.id).set(category.toDocument());
   }
 
-  Future<void> deleteCategory(String categoryId) async {
-    // Need userId to get collection reference - categoryId alone is not enough
-    // We'll need to find the category first OR pass userId
-    // For now, use collectionGroup query to find and delete by id
-    final querySnapshot = await _firestore
-        .collectionGroup('categories')
-        .where(FieldPath.documentId, isEqualTo: categoryId)
-        .get();
-    
-    for (var doc in querySnapshot.docs) {
-      await doc.reference.delete();
-    }
+  // ĐÃ SỬA: Truyền thêm userId vào và xóa trực tiếp bằng đường dẫn chuẩn
+  Future<void> deleteCategory(String categoryId, String userId) async {
+    await _getUserCategories(userId).doc(categoryId).delete();
   }
 }

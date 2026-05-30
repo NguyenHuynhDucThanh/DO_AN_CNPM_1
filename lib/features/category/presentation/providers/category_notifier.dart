@@ -34,26 +34,27 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
   }
 
   Future<void> addCategory(CategoryEntity category) async {
-    // Lưu lại list cũ để cập nhật optimistic hoặc reload sau
     final result = await _addUseCase(category);
-    result.fold(
-      (failure) => state = CategoryError(failure.message),
-      (_) => fetchCategories(category.userId), // Reload lại list
+    await result.fold<Future<void>>(
+      (failure) async {
+        state = CategoryError(failure.message);
+      },
+      (_) async {
+        await fetchCategories(category.userId);
+      },
     );
   }
 
-  Future<void> deleteCategory(String categoryId) async {
-    final result = await _deleteUseCase(categoryId);
+  // --- ĐÃ SỬA: Thêm userId vào tham số ---
+  Future<void> deleteCategory(String categoryId, String userId) async {
+    // Gọi UseCase truyền đủ 2 tham số
+    final result = await _deleteUseCase(categoryId, userId);
+
     result.fold(
       (failure) => state = CategoryError(failure.message),
       (_) {
-        // Reload categories - need userId from current state
-        if (state is CategoryLoaded) {
-          final currentCategories = (state as CategoryLoaded).categories;
-          if (currentCategories.isNotEmpty) {
-            fetchCategories(currentCategories.first.userId);
-          }
-        }
+        // Tải lại danh sách ngay lập tức với userId truyền vào
+        fetchCategories(userId);
       },
     );
   }

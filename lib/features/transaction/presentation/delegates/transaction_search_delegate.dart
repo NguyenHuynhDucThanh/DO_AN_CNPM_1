@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:finance_app/core/utils/formatters.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../providers/transaction_notifier.dart';
 import '../widgets/transaction_card.dart';

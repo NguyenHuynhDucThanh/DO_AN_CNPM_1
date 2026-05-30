@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../transaction/data/services/transaction_service.dart';
 import '../../../transaction/presentation/providers/transaction_providers.dart';
 import '../../data/services/wallet_service.dart';
 import '../../data/repositories/wallet_repository_impl.dart';

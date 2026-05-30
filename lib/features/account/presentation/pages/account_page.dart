@@ -6,8 +6,6 @@ import 'package:finance_app/core/utils/formatters.dart';
 import 'package:finance_app/features/transaction/presentation/providers/transaction_notifier.dart';
 import 'package:finance_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:finance_app/features/wallet/presentation/providers/wallet_providers.dart';
-import 'package:finance_app/features/wallet/presentation/pages/create_wallet_page.dart';
-import 'package:finance_app/features/wallet/presentation/pages/wallet_management_page.dart';
 import 'settings_page.dart';
 import '../widgets/update_profile_dialog.dart'; // Import dialog
 
@@ -201,29 +199,6 @@ class _AccountPageState extends ConsumerState<AccountPage> {
       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       onTap: onTap,
     );
-  }
-
-  void _navigateToWallet(BuildContext context, WidgetRef ref) {
-    final walletState = ref.read(walletNotifierProvider);
-    final wallet = walletState.wallet;
-
-    if (wallet == null || !wallet.isActive) {
-      // No wallet -> Create new
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CreateWalletPage(isOnboarding: false),
-        ),
-      );
-    } else {
-      // Has wallet -> Manage
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const WalletManagementPage(),
-        ),
-      );
-    }
   }
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {

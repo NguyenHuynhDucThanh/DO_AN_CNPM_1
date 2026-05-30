@@ -32,11 +32,38 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
   late TransactionType _type;
   late DateTime _selectedDate;
 
+  /// Chặn double-submit (test / double-tap) gọi lưu hai lần trước khi UI kịp khóa.
+  bool _saveInProgress = false;
+
+  ProviderSubscription<TransactionState>? _transactionListen;
+
   bool get isEditing => widget.transactionToEdit != null;
 
   @override
   void initState() {
     super.initState();
+    _transactionListen = ref.listenManual<TransactionState>(
+      transactionNotifierProvider,
+      (prev, next) {
+        final becameSuccess = !(prev?.isSuccess ?? false) && next.isSuccess;
+        final hasNewError =
+            next.errorMessage != null && next.errorMessage != prev?.errorMessage;
+
+        if (becameSuccess) {
+          if (!mounted) return;
+          Navigator.of(context).pop(true);
+          return;
+        }
+
+        if (hasNewError) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.errorMessage!)),
+          );
+        }
+      },
+    );
+
     final t = widget.transactionToEdit;
     
     _amountController = TextEditingController(text: t != null ? t.amount.toStringAsFixed(0) : '');
@@ -47,12 +74,14 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
     _selectedDate = t?.date ?? DateTime.now();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(transactionNotifierProvider.notifier).resetUiFeedback();
       ref.read(categoryNotifierProvider.notifier).fetchCategories(widget.userId);
     });
   }
 
   @override
   void dispose() {
+    _transactionListen?.close();
     _amountController.dispose();
     _titleController.dispose(); // <--- MỚI
     _noteController.dispose();
@@ -80,15 +109,6 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(transactionNotifierProvider);
-
-    ref.listen(transactionNotifierProvider, (prev, next) {
-      if (next.isSuccess) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isEditing ? 'Đã cập nhật giao dịch' : 'Thêm giao dịch thành công')),
-        );
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(title: Text(isEditing ? 'Sửa giao dịch' : 'Thêm giao dịch')),
@@ -192,7 +212,9 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: _saveInProgress
+                          ? null
+                          : () async {
                         // Validate cả Title
                         if (_amountController.text.isEmpty || _selectedCategoryName.isEmpty || _titleController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập Tiền, Tên giao dịch và Danh mục')));
@@ -214,10 +236,15 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                           note: _noteController.text,
                         );
 
-                        if (isEditing) {
-                          ref.read(transactionNotifierProvider.notifier).updateTransaction(transaction);
-                        } else {
-                          ref.read(transactionNotifierProvider.notifier).addTransaction(transaction);
+                        setState(() => _saveInProgress = true);
+                        try {
+                          if (isEditing) {
+                            await ref.read(transactionNotifierProvider.notifier).updateTransaction(transaction);
+                          } else {
+                            await ref.read(transactionNotifierProvider.notifier).addTransaction(transaction);
+                          }
+                        } finally {
+                          if (mounted) setState(() => _saveInProgress = false);
                         }
                       },
                       child: Padding(

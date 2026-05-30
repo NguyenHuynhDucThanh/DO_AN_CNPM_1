@@ -25,5 +25,5 @@ class TransactionEntity extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, userId, amount, type, category, date, note];
+  List<Object?> get props => [id, userId, amount, type, category, title, date, note];
 }

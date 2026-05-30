@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:finance_app/core/utils/currency_input_formatter.dart';
 import 'package:finance_app/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:finance_app/features/auth/data/services/auth_service.dart';
-import 'package:finance_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:finance_app/features/home/presentation/pages/home_page.dart';
-import '../providers/wallet_notifier.dart';
 import '../providers/wallet_providers.dart';
 
 class CreateWalletPage extends ConsumerStatefulWidget {

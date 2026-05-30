@@ -7,8 +7,6 @@ import 'package:finance_app/core/widgets/error_widget.dart';
 import '../../../home/presentation/pages/home_page.dart';
 // Import AdminHomePage
 import '../../../admin/presentation/pages/admin_home_page.dart';
-// Import CreateWalletPage
-import '../../../wallet/presentation/pages/create_wallet_page.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});

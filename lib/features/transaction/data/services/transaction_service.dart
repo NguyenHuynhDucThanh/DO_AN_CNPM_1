@@ -22,8 +22,10 @@ class TransactionService {
   }
 
   Future<void> addTransaction(TransactionModel transaction) async {
-    // Không dùng transaction.id vì Firestore sẽ tự sinh ID
-    await _getUserTransactions(transaction.userId).add(transaction.toDocument());
+    // Dùng id từ entity (UUID) làm doc id: gọi lặp / retry ghi cùng doc → không sinh bản copy mới.
+    await _getUserTransactions(transaction.userId)
+        .doc(transaction.id)
+        .set(transaction.toDocument());
   }
 
   Future<void> updateTransaction(TransactionModel transaction) async {

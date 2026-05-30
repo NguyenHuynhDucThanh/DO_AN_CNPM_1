@@ -4,20 +4,18 @@ import '../../domain/entities/transaction_entity.dart';
 import '../../domain/usecases/get_transactions_usecase.dart';
 import '../../domain/usecases/add_transaction_usecase.dart';
 import '../../domain/usecases/delete_transaction_usecase.dart';
-// Import UseCase Update mới
 import '../../domain/usecases/update_transaction_usecase.dart';
 import 'transaction_providers.dart';
 
-// 1. Định nghĩa State
 class TransactionState extends Equatable {
   final bool isLoading;
   final List<TransactionEntity> transactions;
   final String? errorMessage;
-  final bool isSuccess; // Dùng để báo hiệu thêm/xóa/sửa thành công để đóng form
+  final bool isSuccess;
 
   const TransactionState({
     this.isLoading = false,
-    this.transactions = const [],
+    this.transactions = const[],
     this.errorMessage,
     this.isSuccess = false,
   });
@@ -31,7 +29,7 @@ class TransactionState extends Equatable {
     return TransactionState(
       isLoading: isLoading ?? this.isLoading,
       transactions: transactions ?? this.transactions,
-      errorMessage: errorMessage, 
+      errorMessage: errorMessage,
       isSuccess: isSuccess ?? this.isSuccess,
     );
   }
@@ -40,98 +38,108 @@ class TransactionState extends Equatable {
   List<Object?> get props => [isLoading, transactions, errorMessage, isSuccess];
 }
 
-// 2. Notifier
 class TransactionNotifier extends StateNotifier<TransactionState> {
   final GetTransactionsUseCase _getTransactionsUseCase;
   final AddTransactionUseCase _addTransactionUseCase;
   final DeleteTransactionUseCase _deleteTransactionUseCase;
-  // Thêm UseCase update
   final UpdateTransactionUseCase _updateTransactionUseCase;
 
   TransactionNotifier(
     this._getTransactionsUseCase,
     this._addTransactionUseCase,
     this._deleteTransactionUseCase,
-    this._updateTransactionUseCase, // Inject vào constructor
+    this._updateTransactionUseCase,
   ) : super(const TransactionState());
 
-  // Lấy danh sách giao dịch
+  /// Xóa cờ success/error khi mở lại form (tránh ref.listen hiểu nhầm chuyển trạng thái).
+  void resetUiFeedback() {
+    state = TransactionState(
+      isLoading: state.isLoading,
+      transactions: state.transactions,
+      errorMessage: null,
+      isSuccess: false,
+    );
+  }
+
   Future<void> fetchTransactions(String userId) async {
-    // Chỉ hiện loading nếu list đang rỗng (để tránh nháy màn hình khi refresh)
     if (state.transactions.isEmpty) {
       state = state.copyWith(isLoading: true);
     }
     
     final result = await _getTransactionsUseCase(userId);
     
+    // THÊM DÒNG NÀY: Kiểm tra xem Notifier đã bị hủy chưa trước khi set state
+    if (!mounted) return;
+
     result.fold(
       (failure) => state = state.copyWith(isLoading: false, errorMessage: failure.message),
       (data) => state = state.copyWith(isLoading: false, transactions: data),
     );
   }
 
-  // Thêm giao dịch
   Future<void> addTransaction(TransactionEntity transaction) async {
     state = state.copyWith(isLoading: true, isSuccess: false);
     
     final result = await _addTransactionUseCase(transaction);
     
+    if (!mounted) return; // Kiểm tra
+
     result.fold(
       (failure) => state = state.copyWith(isLoading: false, errorMessage: failure.message),
       (success) async {
         await fetchTransactions(transaction.userId);
+
+        if (!mounted) return; // Kiểm tra lại sau khi fetch xong
         state = state.copyWith(isLoading: false, isSuccess: true);
       },
     );
   }
 
-  // --- HÀM MỚI: Cập nhật giao dịch ---
   Future<void> updateTransaction(TransactionEntity transaction) async {
     state = state.copyWith(isLoading: true, isSuccess: false);
     
     final result = await _updateTransactionUseCase(transaction);
     
+    if (!mounted) return; // Kiểm tra
+
     result.fold(
       (failure) => state = state.copyWith(isLoading: false, errorMessage: failure.message),
       (success) async {
-        // Sau khi update thành công, tải lại danh sách mới nhất
         await fetchTransactions(transaction.userId);
-        // Báo hiệu thành công để đóng form
+
+        if (!mounted) return; // Kiểm tra
         state = state.copyWith(isLoading: false, isSuccess: true);
       },
     );
   }
 
-  // Xóa giao dịch
   Future<void> deleteTransaction(String transactionId, String userId) async {
-    // Optimistic UI: Xóa trên UI trước cho mượt
     final oldList = state.transactions;
     final newList = oldList.where((t) => t.id != transactionId).toList();
     state = state.copyWith(transactions: newList);
 
     final result = await _deleteTransactionUseCase(transactionId, userId);
     
+    if (!mounted) return; // Kiểm tra
+
     result.fold(
       (failure) {
-        // Nếu lỗi thì revert lại danh sách cũ và báo lỗi
         state = state.copyWith(transactions: oldList, errorMessage: failure.message);
       },
-      (success) => null, // Thành công thì không cần làm gì thêm
+      (success) => null,
     );
   }
 
-  // Clear all transactions (when wallet is deleted)
   void clearTransactions() {
-    state = const TransactionState(transactions: []);
+    state = const TransactionState();
   }
 }
 
-// 3. Provider chính
 final transactionNotifierProvider = StateNotifierProvider<TransactionNotifier, TransactionState>((ref) {
   return TransactionNotifier(
     ref.read(getTransactionsUseCaseProvider),
     ref.read(addTransactionUseCaseProvider),
     ref.read(deleteTransactionUseCaseProvider),
-    ref.read(updateTransactionUseCaseProvider), // Thêm provider update vào đây
+    ref.read(updateTransactionUseCaseProvider),
   );
 });

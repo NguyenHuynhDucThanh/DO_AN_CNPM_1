@@ -1,10 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:finance_app/core/errors/exceptions.dart';
 import 'package:finance_app/core/errors/failures.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {

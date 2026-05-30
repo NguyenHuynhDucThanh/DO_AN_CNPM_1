@@ -7,7 +7,7 @@ class DeleteCategoryUseCase {
 
   DeleteCategoryUseCase(this.repository);
 
-  Future<Either<Failure, Unit>> call(String categoryId) {
-    return repository.deleteCategory(categoryId);
+  Future<Either<Failure, Unit>> call(String categoryId, String userId) {
+    return repository.deleteCategory(categoryId, userId);
   }
 }

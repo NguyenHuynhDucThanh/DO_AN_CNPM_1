@@ -1,30 +1,38 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:finance_app/main.dart';
+import 'package:finance_app/features/report/domain/usecases/calculate_report_usecase.dart';
+import 'package:finance_app/features/transaction/domain/entities/transaction_entity.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('CalculateReportUseCase summarizes income and expenses', () {
+    final calculator = CalculateReportUseCase();
+    final transactions = [
+      TransactionEntity(
+        id: 'expense-1',
+        userId: 'user-1',
+        amount: 100000,
+        type: TransactionType.expense,
+        category: 'Food',
+        title: 'Lunch',
+        date: DateTime(2026, 4, 11),
+      ),
+      TransactionEntity(
+        id: 'income-1',
+        userId: 'user-1',
+        amount: 300000,
+        type: TransactionType.income,
+        category: 'Salary',
+        title: 'Salary',
+        date: DateTime(2026, 4, 14),
+      ),
+    ];
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final report = calculator(transactions);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(report.totalExpense, 100000);
+    expect(report.totalIncome, 300000);
+    expect(report.balance, 200000);
+    expect(report.expenseChartData.single.categoryName, 'Food');
+    expect(report.expenseChartData.single.percentage, 100);
   });
 }

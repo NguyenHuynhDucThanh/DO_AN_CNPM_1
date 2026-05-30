@@ -26,6 +26,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
   // Controller để lấy text từ ô nhập
   final _textController = TextEditingController();
 
+  /// Tránh hai lần gọi liên tiếp (Enter + icon, hoặc tap nhanh trong test).
+  bool _addCategoryInProgress = false;
+
   @override
   void dispose() {
     _textController.dispose();
@@ -33,24 +36,27 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
   }
 
   // Hàm xử lý thêm danh mục (Dùng chung cho cả nút Enter và nút +)
-  void _handleAddCategory() {
+  Future<void> _handleAddCategory() async {
+    if (_addCategoryInProgress) return;
     final name = _textController.text.trim();
-    if (name.isNotEmpty) {
+    if (name.isEmpty) return;
+
+    _addCategoryInProgress = true;
+    try {
       final newCategory = CategoryEntity(
         id: const Uuid().v4(),
         name: name,
         type: widget.type,
         userId: widget.userId,
       );
-      
-      // Gọi Provider để thêm
-      ref.read(categoryNotifierProvider.notifier).addCategory(newCategory);
-      
-      // Xóa ô nhập sau khi thêm
+
+      await ref.read(categoryNotifierProvider.notifier).addCategory(newCategory);
+
+      if (!mounted) return;
       _textController.clear();
-      
-      // Đóng bàn phím để nhìn thấy danh sách
       FocusManager.instance.primaryFocus?.unfocus();
+    } finally {
+      _addCategoryInProgress = false;
     }
   }
 
@@ -154,7 +160,7 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
                               );
                               
                               if (confirm == true) {
-                                ref.read(categoryNotifierProvider.notifier).deleteCategory(category.id);
+                                ref.read(categoryNotifierProvider.notifier).deleteCategory(category.id, category.userId);
                               }
                             },
                           ),

@@ -5,7 +5,6 @@ import '../../domain/usecases/get_wallet_usecase.dart';
 import '../../domain/usecases/create_wallet_usecase.dart';
 import '../../domain/usecases/update_wallet_usecase.dart';
 import '../../domain/usecases/delete_wallet_usecase.dart';
-import '../../../transaction/presentation/providers/transaction_notifier.dart';
 
 class WalletState extends Equatable {
   final bool isLoading;

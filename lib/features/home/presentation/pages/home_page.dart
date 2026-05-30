@@ -144,6 +144,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Reload nếu đã save thành công
     if (result == true) {
       _loadData();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lưu giao dịch thành công')),
+        );
+      }
     }
   }
 

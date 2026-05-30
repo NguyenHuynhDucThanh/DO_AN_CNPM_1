@@ -4,7 +4,6 @@ import 'package:finance_app/core/utils/currency_input_formatter.dart';
 import 'package:finance_app/core/utils/formatters.dart';
 import 'package:finance_app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:finance_app/features/transaction/presentation/providers/transaction_notifier.dart';
-import '../providers/wallet_notifier.dart';
 import '../providers/wallet_providers.dart';
 
 class WalletManagementPage extends ConsumerStatefulWidget {
@@ -195,7 +194,8 @@ class _WalletManagementPageState extends ConsumerState<WalletManagementPage> {
               
               // Clear transaction state in app
               ref.read(transactionNotifierProvider.notifier).clearTransactions();
-              
+
+              if (!context.mounted) return;
               Navigator.pop(context); // Close dialog
               Navigator.pop(context); // Back to account page
             },
