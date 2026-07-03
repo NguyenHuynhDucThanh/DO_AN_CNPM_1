@@ -24,8 +24,11 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
   CategoryNotifier(this._getUseCase, this._addUseCase, this._deleteUseCase) : super(CategoryInitial());
 
-  Future<void> fetchCategories(String userId) async {
-    state = CategoryLoading();
+  /// [showLoading] = false khi refresh sau add/delete: giữ danh sách cũ hiển thị
+  /// thay vì thay bằng spinner xoay vô hạn. Spinner vô hạn khiến
+  /// `pumpAndSettle` trong integration test bị treo (không bao giờ settle).
+  Future<void> fetchCategories(String userId, {bool showLoading = true}) async {
+    if (showLoading) state = CategoryLoading();
     final result = await _getUseCase(userId);
     result.fold(
       (failure) => state = CategoryError(failure.message),
@@ -40,7 +43,7 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
         state = CategoryError(failure.message);
       },
       (_) async {
-        await fetchCategories(category.userId);
+        await fetchCategories(category.userId, showLoading: false);
       },
     );
   }
@@ -52,9 +55,9 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
     result.fold(
       (failure) => state = CategoryError(failure.message),
-      (_) {
-        // Tải lại danh sách ngay lập tức với userId truyền vào
-        fetchCategories(userId);
+      (_) async {
+        // Tải lại danh sách (giữ list cũ, không bật spinner vô hạn)
+        await fetchCategories(userId, showLoading: false);
       },
     );
   }

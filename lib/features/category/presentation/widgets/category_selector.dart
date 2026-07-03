@@ -160,7 +160,7 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
                               );
                               
                               if (confirm == true) {
-                                ref.read(categoryNotifierProvider.notifier).deleteCategory(category.id, category.userId);
+                                await ref.read(categoryNotifierProvider.notifier).deleteCategory(category.id, category.userId);
                               }
                             },
                           ),

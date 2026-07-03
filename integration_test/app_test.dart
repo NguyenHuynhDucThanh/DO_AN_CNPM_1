@@ -61,7 +61,12 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   var createdWalletInTest = false;
 
+  // Thu thập milestone theo thứ tự để báo cáo qua binding.reportData (đáng tin cậy
+  // hơn việc cào stdout — print() trên web bị relay lossy nên hay rớt dòng).
+  final milestones = <String>[];
+
   void logPass(String message) {
+    milestones.add(message);
     print('[PASS] $message');
   }
 
@@ -86,6 +91,40 @@ void main() {
   }) async {
     await tester.tap(finder.hitTestable().first, warnIfMissed: warnIfMissed);
     await settleAfterGesture(tester);
+  }
+
+  /// Thêm danh mục mới một cách tất định: nhập tên rồi kích hoạt onSubmitted
+  /// qua action "done" (đáng tin cậy hơn bấm icon (+) nhỏ — dễ trượt khi
+  /// warnIfMissed=false). Vẫn tap icon (+) làm fallback; thao tác idempotent vì
+  /// _handleAddCategory bỏ qua khi text rỗng và có guard chống gọi 2 lần.
+  Future<void> addNewCategory(WidgetTester tester, String name) async {
+    final field = find.widgetWithText(TextField, 'Nhập tên danh mục mới...');
+    await tester.enterText(field, name);
+    await tester.pumpAndSettle();
+
+    // Kích hoạt thêm qua onSubmitted; rồi bấm icon (+) như lớp dự phòng.
+    // Idempotent: sau khi add xong ô nhập đã clear (text rỗng → no-op) và có
+    // guard _addCategoryInProgress chống gọi 2 lần.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    final addIcon = find.byIcon(Icons.add_circle);
+    if (addIcon.hitTestable().evaluate().isNotEmpty) {
+      await tester.tap(addIcon.hitTestable().first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+    }
+
+    // Chờ thẻ danh mục render TRONG GridView (Firestore ghi+đọc có thể chậm khi
+    // Chrome bị throttle). Dùng descendant để không khớp nhầm chữ trong ô nhập.
+    final cardInGrid = find.descendant(
+      of: find.byType(GridView),
+      matching: find.text(name),
+    );
+    final deadline = DateTime.now().add(const Duration(seconds: 20));
+    while (DateTime.now().isBefore(deadline)) {
+      await tester.pumpAndSettle();
+      if (cardInGrid.evaluate().isNotEmpty) return;
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
   }
 
   Future<bool> waitForFinder(WidgetTester tester, Finder finder, {int timeoutSeconds = 10}) async {
@@ -124,7 +163,9 @@ void main() {
     required int month,
     required int year,
   }) async {
-    await tester.tap(find.byIcon(Icons.calendar_today).last);
+    final calendarIcon = find.byIcon(Icons.calendar_today);
+    await tester.ensureVisible(calendarIcon.last);
+    await tester.tap(calendarIcon.hitTestable().last);
     await tester.pumpAndSettle();
 
     final now = DateTime.now();
@@ -232,9 +273,11 @@ void main() {
   });
 
   testWidgets('Luồng E2E', (tester) async {
-    // 1. Khởi động ứng dụng
-    await app.main();
-    await tester.pumpAndSettle();
+    final binding = IntegrationTestWidgetsFlutterBinding.instance as IntegrationTestWidgetsFlutterBinding;
+    try {
+      // 1. Khởi động ứng dụng
+      await app.main();
+      await tester.pumpAndSettle();
 
     // -------------------------------------------------------------
     // BƯỚC 1 & 2: ĐĂNG NHẬP
@@ -383,19 +426,10 @@ void main() {
     await tester.tap(find.text('Chọn danh mục'));
     await tester.pumpAndSettle();
 
-    final newCategoryField = find.widgetWithText(TextField, 'Nhập tên danh mục mới...');
-    await tester.enterText(newCategoryField, 'đồ ăn');
-    await tester.pumpAndSettle();
-
-    // Bấm Icon (+) — chỉ target hitTestable để không trúng overlay/duplicate
-    await tapHitTestable(tester, find.byIcon(Icons.add_circle));
-
-    // Chờ animation render cái thẻ danh mục mới
-    await Future.delayed(const Duration(seconds: 1));
-    await tester.pumpAndSettle();
+    await addNewCategory(tester, 'đồ ăn');
 
     // Bấm chọn chính cái danh mục 'đồ ăn' để đóng BottomSheet
-    await tester.tap(find.text('đồ ăn').last); 
+    await tester.tap(find.text('đồ ăn').last);
     await tester.pumpAndSettle();
 
     // 4.5. CHỌN NGÀY THÁNG
@@ -409,7 +443,7 @@ void main() {
     } else {
       final predicate = find.byWidgetPredicate((w) {
         if (w is Text && w.data != null) {
-          final normalized = w.data!.replaceAll(RegExp(r"\\s+"), ' ');
+          final normalized = w.data!.replaceAll(RegExp(r"\s+"), ' ');
           return normalized.contains(expectedDate);
         }
         return false;
@@ -481,14 +515,7 @@ void main() {
     await tester.tap(find.text('Chọn danh mục'));
     await tester.pumpAndSettle();
 
-    final salaryCategoryField = find.widgetWithText(TextField, 'Nhập tên danh mục mới...');
-    await tester.enterText(salaryCategoryField, 'lương tháng');
-    await tester.pumpAndSettle();
-
-    await tapHitTestable(tester, find.byIcon(Icons.add_circle));
-
-    await Future.delayed(const Duration(seconds: 1));
-    await tester.pumpAndSettle();
+    await addNewCategory(tester, 'lương tháng');
 
     await tester.tap(find.text('lương tháng').last);
     await tester.pumpAndSettle();
@@ -588,7 +615,8 @@ void main() {
     expect(find.text('Tháng 4/2026'), findsWidgets);
 
     // Use `findsWidgets` for clearer diagnostics if not found
-    expect(find.text('Phở gà'), findsWidgets);
+    final phoGaVisible = await waitForFinder(tester, find.text('Phở gà'), timeoutSeconds: 8);
+    expect(phoGaVisible, isTrue, reason: 'Phở gà should still be visible before delete');
     final phoGaCountBeforeDelete = find.text('Phở gà').evaluate().length;
 
     final txCardToDelete = find.ancestor(
@@ -621,11 +649,7 @@ void main() {
       // Create the category inline if it's missing so the test can proceed.
       final newCategoryField2 = find.widgetWithText(TextField, 'Nhập tên danh mục mới...');
       if (newCategoryField2.evaluate().isNotEmpty) {
-        await tester.enterText(newCategoryField2, 'đồ ăn');
-        await tester.pumpAndSettle();
-        await tapHitTestable(tester, find.byIcon(Icons.add_circle));
-        await Future.delayed(const Duration(seconds: 1));
-        await tester.pumpAndSettle();
+        await addNewCategory(tester, 'đồ ăn');
         if (find.text('đồ ăn').evaluate().isNotEmpty) {
           await tester.tap(find.text('đồ ăn').last);
           await tester.pumpAndSettle();
@@ -881,5 +905,32 @@ void main() {
     print("=========================================================");
     print("🎉 TẤT CẢ TEST CASE ĐÃ CHẠY THÀNH CÔNG (ALL TESTS PASSED) 🎉");
     print("=========================================================");
+    } catch (e, s) {
+      // Attempt to capture a screenshot for debugging
+      try {
+        final ts = DateTime.now().toIso8601String().replaceAll(':', '-');
+        await binding.takeScreenshot('failure-$ts');
+        print('Saved screenshot: failure-$ts');
+      } catch (screenshotErr) {
+        print('Failed to take screenshot: $screenshotErr');
+      }
+      print('Test failed with error: $e');
+      print(s);
+      rethrow;
+    } finally {
+      // Báo cáo milestones qua reportData để driver ghi ra file JSON tin cậy.
+      // Đặt trong finally → luôn ghi cả khi test pass lẫn fail (giữ lại các TC
+      // đã đạt trước khi lỗi).
+      binding.reportData = <String, dynamic>{'milestones': milestones};
+
+      // Ensure animations/listeners have settled before the test process exits
+      try {
+        await tester.pumpAndSettle(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+      } catch (_) {
+        // ignore pump errors during cleanup
+      }
+    }
   });
 }

@@ -18,6 +18,8 @@ void main(List<String> args) {
   final inputPath =
       _argValue(args, '--input') ?? 'build/test-results/flutter-test.jsonl';
   final outputPath = _argValue(args, '--output') ?? 'build/allure-results';
+  final milestonesPath =
+      _argValue(args, '--milestones') ?? 'build/test-results/e2e-report.json';
 
   final input = File(inputPath);
   if (!input.existsSync()) {
@@ -25,6 +27,11 @@ void main(List<String> args) {
     exitCode = 2;
     return;
   }
+
+  // Nguồn milestone tin cậy: file JSON do test driver ghi từ binding.reportData.
+  // Không phụ thuộc vào stdout (vốn lossy trên web). Fallback sang scrape stdout
+  // chỉ khi file này thiếu/rỗng.
+  final reportMilestones = _readReportMilestones(milestonesPath);
 
   final output = Directory(outputPath);
   if (output.existsSync()) {
@@ -124,11 +131,22 @@ void main(List<String> args) {
     }
   }
 
-  // Consolidate PASS milestone prints into a single Allure result with steps.
-  if (passMilestones.isNotEmpty) {
+  // Ưu tiên milestone từ reportData (tin cậy); chỉ fallback sang dòng [PASS]
+  // cào từ stdout khi file report không có/không hợp lệ.
+  final effectiveMilestones =
+      reportMilestones.isNotEmpty ? reportMilestones : passMilestones;
+  if (reportMilestones.isEmpty && passMilestones.isNotEmpty) {
+    stderr.writeln(
+      '[WARN] e2e-report.json không có milestone; fallback scrape stdout '
+      '(${passMilestones.length} dòng [PASS] — có thể bị thiếu do relay lossy).',
+    );
+  }
+
+  // Consolidate PASS milestones into a single Allure result with steps.
+  if (effectiveMilestones.isNotEmpty) {
     final steps = <Map<String, dynamic>>[];
-    for (var i = 0; i < passMilestones.length; i++) {
-      final name = _formatMilestoneName(i + 1, passMilestones[i]);
+    for (var i = 0; i < effectiveMilestones.length; i++) {
+      final name = _formatMilestoneName(i + 1, effectiveMilestones[i]);
       steps.add({
         'name': name,
         'status': 'passed',
@@ -143,9 +161,9 @@ void main(List<String> args) {
       uuid: _uuid('milestones-summary-${startedAt}'),
       name: 'Finance App E2E Milestones',
       fullName: 'Finance App E2E.Milestones',
-      status: 'passed',
+      status: (plainExitCode ?? 0) == 0 ? 'passed' : 'failed',
       start: startedAt,
-      stop: startedAt + (passMilestones.length * 1000) + 500,
+      stop: startedAt + (effectiveMilestones.length * 1000) + 500,
       suite: 'Finance App E2E Milestones',
       attachments: rawLines.isEmpty
           ? const []
@@ -248,6 +266,25 @@ String? _argValue(List<String> args, String name) {
   final index = args.indexOf(name);
   if (index == -1 || index + 1 >= args.length) return null;
   return args[index + 1];
+}
+
+/// Đọc danh sách milestone từ file reportData JSON do test driver ghi ra.
+/// Trả về [] nếu file không tồn tại / không hợp lệ / không có khóa 'milestones'.
+List<String> _readReportMilestones(String path) {
+  final file = File(path);
+  if (!file.existsSync()) return const [];
+  try {
+    final decoded = jsonDecode(file.readAsStringSync(encoding: utf8));
+    if (decoded is! Map) return const [];
+    final raw = decoded['milestones'];
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  } catch (_) {
+    return const [];
+  }
 }
 
 Map<String, dynamic>? _tryDecode(String line) {

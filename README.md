@@ -17,7 +17,7 @@ flutter drive on Chrome
 Run the report script:
 
 ```powershell
-.\scripts\run_allure_report.ps1
+./scripts/run_allure_report.ps1
 ```
 
 Run on a specific Flutter device. The current E2E flow is verified on Chrome,
@@ -43,8 +43,10 @@ flutter doctor
 Generate and open the report in one command:
 
 ```powershell
-.\scripts\run_allure_report.ps1 -Open
+.scripts\run_allure_report.ps1
 ```
+
+The script now opens the generated report automatically after each run.
 
 The HTML dashboard is generated at:
 
